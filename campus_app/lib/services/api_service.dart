@@ -5,8 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.156.141.34:5000';
-
+static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app/';
   // ── Upload image (mobile) ─────────────────────────────────
   static Future<String?> uploadImage(String imagePath) async {
     try {
