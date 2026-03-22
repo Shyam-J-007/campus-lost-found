@@ -296,6 +296,27 @@ static Future<Map<String, dynamic>> recoverItem({
     return {'error': 'Could not connect: $e'};
   }
 }
+// ── Forgot password ───────────────────────────────────────
+static Future<Map<String, dynamic>> forgotPassword({
+  required String email,
+  required String studentId,
+}) async {
+  try {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/forgot-password'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'student_id': studentId,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'error': 'Could not connect to server: $e'};
+  }
+}
 
 
 }
