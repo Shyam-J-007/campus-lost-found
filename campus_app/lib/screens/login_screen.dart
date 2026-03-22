@@ -222,12 +222,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                             setModalState(() {
                               isLoading = false;
-                              if (result
-                                  .containsKey('message')) {
+                              if (result.containsKey('message')) {
                                 isError = false;
-                                message =
-                                    'Account verified! Please contact your administrator to reset your password.';
-                              } else {
+                                message = 'Account found! Your password is: ${result['password']}';
+                              }else {
                                 isError = true;
                                 message = result['error'] ??
                                     'Account not found';
