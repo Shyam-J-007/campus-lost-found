@@ -377,6 +377,34 @@ def recover_item():
     finally:
         if db:
             db.close()
+@app.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    db = None
+    try:
+        data = request.json
+        email = data["email"]
+        student_id = data["student_id"]
+
+        db = get_connection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT name, password FROM users
+            WHERE email = %s AND student_id = %s
+        """, (email, student_id))
+        user = cursor.fetchone()
+
+        if user:
+            return jsonify({
+                "message": "Account found",
+                "name": user['name']
+            })
+        else:
+            return jsonify({"error": "Account not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db:
+            db.close()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False)

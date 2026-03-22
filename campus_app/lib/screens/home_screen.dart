@@ -572,7 +572,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _suggestions.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(width: 12),
                         itemBuilder: (context, index) {
                           final s = _suggestions[index];
@@ -976,21 +976,33 @@ class _ItemCard extends StatelessWidget {
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
+                                    onPressed: () => Navigator.pop(context, false),
                                     child: Text(
                                       'Cancel',
                                       style: TextStyle(
-                                        color: isDark
-                                            ? Colors.white54
-                                            : Colors.black45,
+                                        color: isDark ? Colors.white54 : Colors.black45,
                                       ),
                                     ),
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: const Text('Yes, got it!'),
+                                  GestureDetector(
+                                    onTap: () => Navigator.pop(context, true),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        gradient: AppTheme.goldGradient,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: AppTheme.goldGlowSoft,
+                                      ),
+                                      child: const Text(
+                                        'Yes, got it!',
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),

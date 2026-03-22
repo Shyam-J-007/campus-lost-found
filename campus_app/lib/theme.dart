@@ -107,7 +107,6 @@ class AppTheme {
     colorScheme: const ColorScheme.dark(
       primary: gold,
       surface: darkCard,
-      background: darkBg,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -139,8 +138,8 @@ class AppTheme {
         padding: EdgeInsets.zero,
       ).copyWith(
         backgroundColor:
-            MaterialStateProperty.all(Colors.transparent),
-        shadowColor: MaterialStateProperty.all(Colors.transparent),
+            WidgetStateProperty.all(Colors.transparent),
+        shadowColor: WidgetStateProperty.all(Colors.transparent),
       ),
     ),
   );
@@ -153,7 +152,6 @@ class AppTheme {
     colorScheme: const ColorScheme.light(
       primary: gold,
       surface: lightCard,
-      background: lightBg,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -185,8 +183,8 @@ class AppTheme {
         padding: EdgeInsets.zero,
       ).copyWith(
         backgroundColor:
-            MaterialStateProperty.all(Colors.transparent),
-        shadowColor: MaterialStateProperty.all(Colors.transparent),
+            WidgetStateProperty.all(Colors.transparent),
+        shadowColor: WidgetStateProperty.all(Colors.transparent),
       ),
     ),
   );
@@ -230,7 +228,7 @@ class GoldButton extends StatelessWidget {
               : Text(
                   text,
                   style: const TextStyle(
-                    color: Colors.black,
+                    color: Color.fromARGB(255, 0, 0, 0),
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,

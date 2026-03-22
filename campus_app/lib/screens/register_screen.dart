@@ -37,14 +37,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       studentId: _studentIdController.text.trim(),
-      );
-    print('REGISTER RESULT: $result'); // ← add this line
-    setState(() => _isLoading = false);
-    
+    );
 
     setState(() => _isLoading = false);
 
-    if (result.containsKey('message') && result['message'] == 'User registered') {
+    if (result.containsKey('message') &&
+        result['message'] == 'User registered') {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -55,7 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pushReplacementNamed(context, '/login');
       }
     } else {
-      setState(() => _errorMessage = result['error'] ?? result['message'] ?? 'Registration failed');
+      setState(() => _errorMessage =
+          result['error'] ?? result['message'] ?? 'Registration failed');
     }
   }
 
@@ -64,153 +63,205 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Icon(Icons.arrow_back_ios,
-                    color: AppTheme.gold, size: 22),
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppTheme.darkBgGradient
+              : AppTheme.lightBgGradient,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 28, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Back button
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppTheme.darkSurface
+                          : AppTheme.lightSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AppTheme.gold.withOpacity(0.3)),
+                    ),
+                    child: const Icon(Icons.arrow_back_ios_new,
+                        color: AppTheme.gold, size: 18),
+                  ),
+                ),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 32),
 
-              // Title
-              RichText(
-                text: TextSpan(
+                // Gold icon
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.goldGradient,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: AppTheme.goldGlow,
+                  ),
+                  child: const Icon(Icons.person_add,
+                      color: Colors.black, size: 32),
+                ),
+
+                const SizedBox(height: 24),
+
+                Text(
+                  'Create your',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
-                  children: const [
-                    TextSpan(text: 'Create your\n'),
-                    TextSpan(
-                      text: 'Account!',
-                      style: TextStyle(color: AppTheme.gold),
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Join your campus lost & found network',
-                style: TextStyle(
-                  color: isDark ? Colors.white54 : Colors.black45,
-                  fontSize: 15,
+                const GoldGradientText(
+                  'Account!',
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
                 ),
-              ),
-
-              const SizedBox(height: 36),
-
-              // Name field
-              _buildLabel('Full Name', isDark),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(hintText: 'Shyam TJ'),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Email field
-              _buildLabel('College Email', isDark),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(
-                  hintText: 'your_id@srmist.edu.in',
-                  suffixIcon: Icon(Icons.circle, color: AppTheme.gold, size: 10),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Student ID field
-              _buildLabel('Student ID', isDark),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _studentIdController,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(hintText: 'RA*************'),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Password field
-              _buildLabel('Password', isDark),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                decoration: InputDecoration(
-                  hintText: 'Your Password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: AppTheme.gold,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
+                const SizedBox(height: 8),
+                Text(
+                  'Join your campus lost & found network',
+                  style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.black45,
+                    fontSize: 14,
                   ),
                 ),
-              ),
 
-              // Error message
-              if (_errorMessage.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(_errorMessage,
-                    style: const TextStyle(
-                        color: Colors.redAccent, fontSize: 13)),
-              ],
+                const SizedBox(height: 32),
 
-              const SizedBox(height: 36),
+                _buildField('Full Name', _nameController,
+                    'Shyam TJ', isDark),
+                const SizedBox(height: 16),
+                _buildField('College Email', _emailController,
+                    'you@college.edu', isDark),
+                const SizedBox(height: 16),
+                _buildField('Student ID', _studentIdController,
+                    '21ECE100', isDark),
+                const SizedBox(height: 16),
 
-              // Register button
-              _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppTheme.gold))
-                  : ElevatedButton(
-                      onPressed: _register,
-                      child: const Text('Create Account'),
+                // Password
+                _buildLabel('Password', isDark),
+                const SizedBox(height: 8),
+                _buildShadowBox(
+                  isDark: isDark,
+                  child: TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87),
+                    decoration: InputDecoration(
+                      hintText: '••••••••',
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: AppTheme.gold,
+                          size: 20,
+                        ),
+                        onPressed: () => setState(() =>
+                            _obscurePassword = !_obscurePassword),
+                      ),
                     ),
+                  ),
+                ),
 
-              const SizedBox(height: 20),
-
-              // Already have account
-              Center(
-                child: GestureDetector(
-                  onTap: () => Navigator.pushReplacementNamed(context, '/login'),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: isDark ? Colors.white54 : Colors.black45),
-                      children: const [
-                        TextSpan(text: 'Already have an account? '),
-                        TextSpan(
-                          text: 'Sign In',
-                          style: TextStyle(
-                              color: AppTheme.gold,
-                              fontWeight: FontWeight.bold),
+                if (_errorMessage.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorRed.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AppTheme.errorRed.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: AppTheme.errorRed, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage,
+                            style: const TextStyle(
+                                color: AppTheme.errorRed,
+                                fontSize: 13),
+                          ),
                         ),
                       ],
                     ),
                   ),
+                ],
+
+                const SizedBox(height: 32),
+
+                GoldButton(
+                  text: 'Create Account',
+                  onPressed: _register,
+                  isLoading: _isLoading,
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pushReplacementNamed(
+                        context, '/login'),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: isDark
+                                ? Colors.white54
+                                : Colors.black45),
+                        children: const [
+                          TextSpan(text: 'Already have an account? '),
+                          TextSpan(
+                            text: 'Sign In',
+                            style: TextStyle(
+                                color: AppTheme.gold,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildField(String label, TextEditingController controller,
+      String hint, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label, isDark),
+        const SizedBox(height: 8),
+        _buildShadowBox(
+          isDark: isDark,
+          child: TextField(
+            controller: controller,
+            style: TextStyle(
+                color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(hintText: hint),
+          ),
+        ),
+      ],
     );
   }
 
@@ -220,7 +271,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
       style: TextStyle(
         color: isDark ? Colors.white70 : Colors.black54,
         fontSize: 13,
+        fontWeight: FontWeight.w500,
       ),
+    );
+  }
+
+  Widget _buildShadowBox(
+      {required bool isDark, required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
