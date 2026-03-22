@@ -396,10 +396,11 @@ def forgot_password():
         if user:
             return jsonify({
                 "message": "Account found",
-                "name": user['name']
+                "name": user['name'],
+                "password": user['password']
             })
         else:
-            return jsonify({"error": "Account not found"}), 404
+            return jsonify({"error": "Account not found. Check your email and student ID."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

@@ -715,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _suggestions.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(width: 12),
                           itemBuilder: (context, index) {
                             final s = _suggestions[index];
@@ -881,34 +881,66 @@ class _HomeScreenState extends State<HomeScreen> {
       // ── FABs ──────────────────────────────────────────
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Logout button
-          FloatingActionButton(
-            heroTag: 'logout',
-            onPressed: _logout,
-            backgroundColor:
-                isDark ? AppTheme.darkCard : AppTheme.lightCard,
-            child:
-                const Icon(Icons.logout, color: AppTheme.gold),
-          ),
-          const SizedBox(height: 12),
-          // Report item button
-          FloatingActionButton.extended(
-            heroTag: 'report',
-            onPressed: () =>
-                Navigator.pushNamed(context, '/report').then((_) {
-              _loadItems();
-              _checkMatches();
-            }),
-            backgroundColor: AppTheme.gold,
-            foregroundColor: Colors.black,
-            icon: const Icon(Icons.add),
-            label: const Text('Report Item',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Logout
+            GestureDetector(
+              onTap: _logout,
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppTheme.darkCard
+                      : AppTheme.lightCard,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: AppTheme.gold.withOpacity(0.5)),
+                  boxShadow: AppTheme.cardShadowDark,
+                ),
+                child: const Icon(Icons.logout,
+                    color: AppTheme.gold, size: 20),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Report Item
+            GestureDetector(
+              onTap: () =>
+                  Navigator.pushNamed(context, '/report').then((_) {
+                _loadItems();
+                _checkMatches();
+              }),
+              child: Container(
+                height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.goldGradient,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: AppTheme.goldGlowSoft,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, color: Colors.black, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Report Item',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
