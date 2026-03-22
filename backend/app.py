@@ -384,23 +384,32 @@ def forgot_password():
         data = request.json
         email = data["email"]
         student_id = data["student_id"]
+        new_password = data.get("new_password", None)
 
         db = get_connection()
         cursor = db.cursor(dictionary=True)
         cursor.execute("""
-            SELECT name, password FROM users
+            SELECT id, name FROM users
             WHERE email = %s AND student_id = %s
         """, (email, student_id))
         user = cursor.fetchone()
 
-        if user:
-            return jsonify({
-                "message": "Account found",
-                "name": user['name'],
-                "password": user['password']
-            })
-        else:
+        if not user:
             return jsonify({"error": "Account not found. Check your email and student ID."}), 404
+
+        if new_password:
+            hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+            cursor.execute("""
+                UPDATE users SET password = %s WHERE id = %s
+            """, (hashed, user['id']))
+            db.commit()
+            return jsonify({"message": "Password updated successfully"})
+
+        return jsonify({
+            "message": "Account verified",
+            "name": user['name']
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
