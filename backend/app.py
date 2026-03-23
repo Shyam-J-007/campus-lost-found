@@ -4,6 +4,8 @@ import bcrypt
 import os
 from db import get_connection
 from dotenv import load_dotenv
+import anthropic
+import base64
 load_dotenv()
 
 app = Flask(__name__)
@@ -415,6 +417,152 @@ def forgot_password():
     finally:
         if db:
             db.close()
+
+
+# Initialize Claude client
+def get_claude_client():
+    return anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+# ── Feature 1: Smart Item Matching ────────────────────────────
+@app.route("/ai-match/<int:lost_item_id>", methods=["GET"])
+def ai_match(lost_item_id):
+    db = None
+    try:
+        db = get_connection()
+        cursor = db.cursor(dictionary=True)
+
+        # Get the lost item
+        cursor.execute("""
+            SELECT * FROM lost_items WHERE id = %s
+        """, (lost_item_id,))
+        lost_item = cursor.fetchone()
+
+        if not lost_item:
+            return jsonify({"error": "Lost item not found"}), 404
+
+        # Get all found items
+        cursor.execute("SELECT * FROM found_items")
+        found_items = cursor.fetchall()
+
+        if not found_items:
+            return jsonify({"matches": []})
+
+        # Build prompt for Claude
+        found_items_text = "\n".join([
+            f"Found Item {i+1} (ID: {f['id']}): {f['item_name']} - {f['description']} - Found at {f['location_found']} on {f['date_found']}"
+            for i, f in enumerate(found_items)
+        ])
+
+        prompt = f"""You are a lost and found matching assistant.
+
+Lost Item:
+- Name: {lost_item['item_name']}
+- Description: {lost_item['description']}
+- Lost at: {lost_item['location_lost']}
+- Date lost: {lost_item['date_lost']}
+
+Found Items:
+{found_items_text}
+
+For each found item, give a match score from 0-100 and a brief reason.
+Only include items with score above 30.
+Respond in JSON format like this:
+{{
+  "matches": [
+    {{
+      "found_item_id": 1,
+      "score": 85,
+      "reason": "Same item type, similar location and date"
+    }}
+  ]
+}}
+Only respond with valid JSON, nothing else."""
+
+        client = get_claude_client()
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        import json
+        result = json.loads(message.content[0].text)
+
+        # Add found item details to matches
+        found_dict = {f['id']: f for f in found_items}
+        for match in result.get('matches', []):
+            fid = match['found_item_id']
+            if fid in found_dict:
+                match['item_name'] = found_dict[fid]['item_name']
+                match['location_found'] = found_dict[fid]['location_found']
+                match['date_found'] = str(found_dict[fid]['date_found'])
+                match['finder_user_id'] = found_dict[fid]['user_id']
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db:
+            db.close()
+
+
+# ── Feature 2: Image Recognition ──────────────────────────────
+@app.route("/ai-identify-image", methods=["POST"])
+def ai_identify_image():
+    try:
+        data = request.json
+        image_url = data.get("image_url")
+
+        if not image_url:
+            return jsonify({"error": "No image URL provided"}), 400
+
+        # Fetch image and convert to base64
+        import requests as req_lib
+        img_response = req_lib.get(image_url)
+        image_data = base64.standard_b64encode(img_response.content).decode("utf-8")
+
+        # Detect content type
+        content_type = img_response.headers.get('content-type', 'image/jpeg')
+
+        client = get_claude_client()
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": content_type,
+                                "data": image_data,
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": """Identify this lost/found item from the image.
+Respond in JSON format only:
+{
+  "item_name": "short item name (e.g. Wallet, Phone, Keys)",
+  "description": "brief description of the item including color, brand if visible, and any distinctive features",
+  "category": "one of: Electronics, Accessories, Documents, Clothing, Bags, Other"
+}
+Only respond with valid JSON, nothing else."""
+                        }
+                    ],
+                }
+            ],
+        )
+
+        import json
+        result = json.loads(message.content[0].text)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
