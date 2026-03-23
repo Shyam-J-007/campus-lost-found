@@ -91,214 +91,225 @@ class _ChatScreenState extends State<ChatScreen> {
               ? AppTheme.darkBgGradient
               : AppTheme.lightBgGradient,
         ),
-    child: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ───────────────────────────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppTheme.darkCard
-                    : AppTheme.lightCard,
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? Colors.white10
-                        : Colors.black12,
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios,
-                        color: AppTheme.gold, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppTheme.gold,
-                    child: Text(
-                      _otherName.isNotEmpty
-                          ? _otherName[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // ── Header ───────────────────────────────────
+              Container(
+                padding:
+                    const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppTheme.darkCard
+                      : AppTheme.lightCard,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black12,
+                      width: 0.5,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _otherName,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? Colors.white
-                                : Colors.black87,
-                          ),
-                        ),
-                        if (_itemName.isNotEmpty)
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back_ios,
+                          color: AppTheme.gold, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: AppTheme.gold,
+                      child: Text(
+                        _otherName.isNotEmpty
+                            ? _otherName[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            'Re: $_itemName',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.gold,
+                            _otherName,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? Colors.white
+                                  : Colors.black87,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Messages ─────────────────────────────────
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: AppTheme.gold))
-                  : _messages.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.chat_bubble_outline,
-                                  color: AppTheme.gold, size: 48),
-                              const SizedBox(height: 12),
-                              Text(
-                                'No messages yet.\nSay hello!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white38
-                                      : Colors.black38,
-                                  height: 1.6,
-                                ),
+                          if (_itemName.isNotEmpty)
+                            Text(
+                              'Re: $_itemName',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.gold,
                               ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            final msg = _messages[index];
-                            final isMe =
-                                msg['sender_id'] == _myUserId;
-                            return _MessageBubble(
-                              message: msg['message'] ?? '',
-                              isMe: isMe,
-                              time: msg['created_at'] ?? '',
-                              isDark: isDark,
-                            );
-                          },
-                        ),
-            ),
-
-            // ── Input box ────────────────────────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppTheme.darkCard
-                    : AppTheme.lightCard,
-                border: Border(
-                  top: BorderSide(
-                    color: isDark
-                        ? Colors.white10
-                        : Colors.black12,
-                    width: 0.5,
-                  ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      style: TextStyle(
-                          color: isDark
-                              ? Colors.white
-                              : Colors.black87),
-                      decoration: InputDecoration(
-                        hintText: 'Type a message...',
-                        hintStyle: TextStyle(
-                            color: isDark
-                                ? Colors.white38
-                                : Colors.black38),
-                        contentPadding:
-                            const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(
-                              color: isDark
-                                  ? Colors.white12
-                                  : Colors.black12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(
-                              color: isDark
-                                  ? Colors.white12
-                                  : Colors.black12),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(
-                              color: AppTheme.gold),
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? AppTheme.darkSurface
-                            : AppTheme.lightSurface,
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _isSending ? null : _sendMessage,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.goldGradient,
-                        shape: BoxShape.circle,
-                        boxShadow: AppTheme.goldGlowSoft,
-                      ),
-                      child: _isSending
-                          ? const Padding(
-                              padding: EdgeInsets.all(10),
-                              child: CircularProgressIndicator(
-                                  color: Colors.black,
-                                  strokeWidth: 2),
-                            )
-                          : const Icon(Icons.send,
-                              color: Colors.black, size: 20),
-                    ),
-                  ),
-                ],
+
+              // ── Messages ─────────────────────────────────
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: AppTheme.gold))
+                    : _messages.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                    Icons.chat_bubble_outline,
+                                    color: AppTheme.gold,
+                                    size: 48),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No messages yet.\nSay hello!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
+                              final msg = _messages[index];
+                              final isMe =
+                                  msg['sender_id'] == _myUserId;
+                              return _MessageBubble(
+                                message: msg['message'] ?? '',
+                                isMe: isMe,
+                                time: _formatTime(
+                                    msg['created_at']),
+                                isDark: isDark,
+                              );
+                            },
+                          ),
               ),
-            ),
-          ],
+
+              // ── Input box ────────────────────────────────
+              Container(
+                padding:
+                    const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppTheme.darkCard
+                      : AppTheme.lightCard,
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black12,
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        style: TextStyle(
+                            color: isDark
+                                ? Colors.white
+                                : Colors.black87),
+                        decoration: InputDecoration(
+                          hintText: 'Type a message...',
+                          hintStyle: TextStyle(
+                              color: isDark
+                                  ? Colors.white38
+                                  : Colors.black38),
+                          contentPadding:
+                              const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                                color: isDark
+                                    ? Colors.white12
+                                    : Colors.black12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                                color: isDark
+                                    ? Colors.white12
+                                    : Colors.black12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(24),
+                            borderSide: const BorderSide(
+                                color: AppTheme.gold),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? AppTheme.darkSurface
+                              : AppTheme.lightSurface,
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _isSending ? null : _sendMessage,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: AppTheme.goldGradient,
+                          shape: BoxShape.circle,
+                          boxShadow: AppTheme.goldGlowSoft,
+                        ),
+                        child: _isSending
+                            ? const Padding(
+                                padding: EdgeInsets.all(10),
+                                child: CircularProgressIndicator(
+                                    color: Colors.black,
+                                    strokeWidth: 2),
+                              )
+                            : const Icon(Icons.send,
+                                color: Colors.black, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),)
+      ),
     );
   }
 }
 
+// ── Message Bubble ────────────────────────────────────────────
 class _MessageBubble extends StatelessWidget {
   final String message;
   final bool isMe;
@@ -365,7 +376,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    time.length > 16 ? time.substring(11, 16) : time,
+                    time,
                     style: TextStyle(
                       fontSize: 10,
                       color: isMe
@@ -383,5 +394,25 @@ class _MessageBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── IST Time formatter ────────────────────────────────────────
+String _formatTime(String? timeStr) {
+  if (timeStr == null || timeStr.isEmpty) return '';
+  try {
+    final utcTime = DateTime.parse(timeStr);
+    final ist =
+        utcTime.add(const Duration(hours: 5, minutes: 30));
+    final hour = ist.hour > 12
+        ? ist.hour - 12
+        : ist.hour == 0
+            ? 12
+            : ist.hour;
+    final minute = ist.minute.toString().padLeft(2, '0');
+    final period = ist.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  } catch (e) {
+    return timeStr ?? '';
   }
 }

@@ -41,12 +41,12 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       'label': 'ID Card',
-      'image': 'https://images.unsplash.com/photo-1602778870521-e0f85c7b4e1e?w=200&q=80',
+      'image': 'https://images.unsplash.com/photo-1637070155805-e6fbee6ec2cf?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8SUQlMjBjYXJkfGVufDB8fDB8fHww',
       'related': ['Purse', 'PAN Card', 'Licence'],
     },
     {
       'label': 'Keys',
-      'image': 'https://images.unsplash.com/photo-1514316454349-750a7fd3da3a?w=200&q=80',
+      'image': 'https://images.unsplash.com/photo-1634979149798-e9a118734e93?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fEtleXN8ZW58MHx8MHx8fDA%3D',
       'related': ['Keychain', 'Bag', 'Purse'],
     },
     {
@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       'label': 'Umbrella',
-      'image': 'https://images.unsplash.com/photo-1549317336-206569e8475c?w=200&q=80',
+      'image': 'https://images.unsplash.com/photo-1541697183324-e15d407c91cf?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8dW1icmVsbGF8ZW58MHx8MHx8fDA%3D',
       'related': ['Bag', 'Keys'],
     },
   ];
@@ -715,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _suggestions.length,
-                          separatorBuilder: (_, _) =>
+                          separatorBuilder: (_, __) =>
                               const SizedBox(width: 12),
                           itemBuilder: (context, index) {
                             final s = _suggestions[index];
@@ -880,68 +880,68 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // ── FABs ──────────────────────────────────────────
       floatingActionButtonLocation:
-          FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // Logout
-            GestureDetector(
-              onTap: _logout,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppTheme.darkCard
-                      : AppTheme.lightCard,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: AppTheme.gold.withOpacity(0.5)),
-                  boxShadow: AppTheme.cardShadowDark,
-                ),
-                child: const Icon(Icons.logout,
-                    color: AppTheme.gold, size: 20),
+        FloatingActionButtonLocation.endFloat,
+    floatingActionButton: Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Logout
+          GestureDetector(
+            onTap: _logout,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppTheme.darkCard
+                    : AppTheme.lightCard,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppTheme.gold.withOpacity(0.5)),
+                boxShadow: AppTheme.cardShadowDark,
               ),
+              child: const Icon(Icons.logout,
+                  color: AppTheme.gold, size: 20),
             ),
-            const SizedBox(height: 12),
-            // Report Item
-            GestureDetector(
-              onTap: () =>
-                  Navigator.pushNamed(context, '/report').then((_) {
-                _loadItems();
-                _checkMatches();
-              }),
-              child: Container(
-                height: 50,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.goldGradient,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: AppTheme.goldGlowSoft,
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add, color: Colors.black, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Report Item',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
+          ),
+          const SizedBox(height: 12),
+          // Report Item
+          GestureDetector(
+            onTap: () =>
+                Navigator.pushNamed(context, '/report').then((_) {
+              _loadItems();
+              _checkMatches();
+            }),
+            child: Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                gradient: AppTheme.goldGradient,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: AppTheme.goldGlowSoft,
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, color: Colors.black, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Report Item',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    ),
     );
   }
 
@@ -992,11 +992,24 @@ class _ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOwner = item['user_id'] == currentUserId;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? AppTheme.cardGradientDark
-            : AppTheme.cardGradientLight,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/item-detail',
+          arguments: {
+            'item': item,
+            'is_lost': isLost,
+            'current_user_id': currentUserId,
+          },
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppTheme.cardGradientDark
+              : AppTheme.cardGradientLight,
         borderRadius: BorderRadius.circular(16),
         boxShadow:
             isDark ? AppTheme.cardShadowDark : AppTheme.cardShadowLight,
@@ -1313,6 +1326,7 @@ class _ItemCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
-  }
+    }
 }

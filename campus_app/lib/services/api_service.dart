@@ -300,6 +300,7 @@ static Future<Map<String, dynamic>> recoverItem({
 static Future<Map<String, dynamic>> forgotPassword({
   required String email,
   required String studentId,
+  String? newPassword,
 }) async {
   try {
     final response = await http
@@ -309,6 +310,7 @@ static Future<Map<String, dynamic>> forgotPassword({
           body: jsonEncode({
             'email': email,
             'student_id': studentId,
+            if (newPassword != null) 'new_password': newPassword,
           }),
         )
         .timeout(const Duration(seconds: 10));

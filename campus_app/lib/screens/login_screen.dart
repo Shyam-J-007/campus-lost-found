@@ -45,9 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showForgotPassword(BuildContext context, bool isDark) {
     final emailController = TextEditingController();
     final studentIdController = TextEditingController();
-    bool isLoading = false;
-    String message = '';
-    bool isError = false;
 
     showModalBottomSheet(
       context: context,
@@ -58,215 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom:
-                    MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white24
-                            : Colors.black12,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Forgot Password?',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Enter your college email and student ID to verify your account.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark
-                          ? Colors.white54
-                          : Colors.black45,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Email
-                  Text('College Email',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: isDark
-                              ? Colors.white70
-                              : Colors.black54)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : Colors.black87),
-                    decoration: const InputDecoration(
-                        hintText: 'you@college.edu'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Student ID
-                  Text('Student ID',
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: isDark
-                              ? Colors.white70
-                              : Colors.black54)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: studentIdController,
-                    style: TextStyle(
-                        color: isDark
-                            ? Colors.white
-                            : Colors.black87),
-                    decoration: const InputDecoration(
-                        hintText: '21ECE100'),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Message
-                  if (message.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isError
-                            ? AppTheme.errorRed.withOpacity(0.1)
-                            : AppTheme.foundMatch
-                                .withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isError
-                              ? AppTheme.errorRed
-                                  .withOpacity(0.3)
-                              : AppTheme.foundMatch
-                                  .withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isError
-                                ? Icons.error_outline
-                                : Icons.check_circle_outline,
-                            color: isError
-                                ? AppTheme.errorRed
-                                : AppTheme.foundMatch,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              message,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isError
-                                    ? AppTheme.errorRed
-                                    : AppTheme.foundMatch,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  // Verify button
-                  GestureDetector(
-                    onTap: isLoading
-                        ? null
-                        : () async {
-                            if (emailController.text.isEmpty ||
-                                studentIdController
-                                    .text.isEmpty) {
-                              setModalState(() {
-                                message =
-                                    'Please fill in all fields';
-                                isError = true;
-                              });
-                              return;
-                            }
-                            setModalState(
-                                () => isLoading = true);
-                            final result =
-                                await ApiService.forgotPassword(
-                              email:
-                                  emailController.text.trim(),
-                              studentId: studentIdController
-                                  .text
-                                  .trim(),
-                            );
-                            setModalState(() {
-                              isLoading = false;
-                              if (result.containsKey('message')) {
-                                isError = false;
-                                message = 'Account found! Your password is: ${result['password']}';
-                              }else {
-                                isError = true;
-                                message = result['error'] ??
-                                    'Account not found';
-                              }
-                            });
-                          },
-                    child: Container(
-                      width: double.infinity,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.goldGradient,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: AppTheme.goldGlowSoft,
-                      ),
-                      child: Center(
-                        child: isLoading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    color: Colors.black,
-                                    strokeWidth: 2.5),
-                              )
-                            : const Text(
-                                'Verify Account',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => _ForgotPasswordSheet(
+        isDark: isDark,
+        emailController: emailController,
+        studentIdController: studentIdController,
+      ),
     );
   }
 
@@ -335,12 +128,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Title
                 Text(
-                  'Hello again,',
+                  'Welcome Back,',
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
-                    color:
-                        isDark ? Colors.white : Colors.black87,
+                    color: isDark ? Colors.white : Colors.black87,
                     height: 1.2,
                   ),
                 ),
@@ -447,8 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color:
-                          AppTheme.errorRed.withOpacity(0.1),
+                      color: AppTheme.errorRed.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                           color: AppTheme.errorRed
@@ -457,8 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Row(
                       children: [
                         const Icon(Icons.error_outline,
-                            color: AppTheme.errorRed,
-                            size: 16),
+                            color: AppTheme.errorRed, size: 16),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -618,6 +408,346 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
       child: child,
+    );
+  }
+}
+
+// ── Forgot Password Sheet ─────────────────────────────────────
+class _ForgotPasswordSheet extends StatefulWidget {
+  final bool isDark;
+  final TextEditingController emailController;
+  final TextEditingController studentIdController;
+
+  const _ForgotPasswordSheet({
+    required this.isDark,
+    required this.emailController,
+    required this.studentIdController,
+  });
+
+  @override
+  State<_ForgotPasswordSheet> createState() =>
+      _ForgotPasswordSheetState();
+}
+
+class _ForgotPasswordSheetState
+    extends State<_ForgotPasswordSheet> {
+  bool _isLoading = false;
+  String _message = '';
+  bool _isError = false;
+  bool _accountVerified = false;
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
+  Future<void> _verify() async {
+    if (widget.emailController.text.isEmpty ||
+        widget.studentIdController.text.isEmpty) {
+      setState(() {
+        _message = 'Please fill in all fields';
+        _isError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _message = '';
+    });
+
+    final result = await ApiService.forgotPassword(
+      email: widget.emailController.text.trim(),
+      studentId: widget.studentIdController.text.trim(),
+    );
+
+    setState(() {
+      _isLoading = false;
+      if (result.containsKey('message')) {
+        _isError = false;
+        _accountVerified = true;
+        _message = 'Account verified! Now set your new password.';
+      } else {
+        _isError = true;
+        _message = result['error'] ?? 'Account not found';
+      }
+    });
+  }
+
+  Future<void> _resetPassword() async {
+    if (_newPasswordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
+      setState(() {
+        _message = 'Please fill in both password fields';
+        _isError = true;
+      });
+      return;
+    }
+
+    if (_newPasswordController.text !=
+        _confirmPasswordController.text) {
+      setState(() {
+        _message = 'Passwords do not match';
+        _isError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _message = '';
+    });
+
+    final result = await ApiService.forgotPassword(
+      email: widget.emailController.text.trim(),
+      studentId: widget.studentIdController.text.trim(),
+      newPassword: _newPasswordController.text,
+    );
+
+    setState(() {
+      _isLoading = false;
+      if (result.containsKey('message')) {
+        _isError = false;
+        _message = 'Password reset successfully! You can now log in.';
+        _accountVerified = false;
+      } else {
+        _isError = true;
+        _message = result['error'] ?? 'Failed to reset password';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Text(
+            _accountVerified ? 'Reset Password' : 'Forgot Password?',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _accountVerified
+                ? 'Enter your new password below.'
+                : 'Enter your college email and student ID to verify your account.',
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white54 : Colors.black45,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          if (!_accountVerified) ...[
+            // Email
+            Text('College Email',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black54)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: widget.emailController,
+              keyboardType: TextInputType.emailAddress,
+              style: TextStyle(
+                  color:
+                      isDark ? Colors.white : Colors.black87),
+              decoration: const InputDecoration(
+                  hintText: 'you@college.edu'),
+            ),
+            const SizedBox(height: 16),
+
+            // Student ID
+            Text('Student ID',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black54)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: widget.studentIdController,
+              style: TextStyle(
+                  color:
+                      isDark ? Colors.white : Colors.black87),
+              decoration:
+                  const InputDecoration(hintText: '21ECE100'),
+            ),
+          ] else ...[
+            // New password
+            Text('New Password',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black54)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _newPasswordController,
+              obscureText: _obscureNew,
+              style: TextStyle(
+                  color:
+                      isDark ? Colors.white : Colors.black87),
+              decoration: InputDecoration(
+                hintText: '••••••••',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureNew
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                    color: AppTheme.gold,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(
+                      () => _obscureNew = !_obscureNew),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Confirm password
+            Text('Confirm Password',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black54)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirm,
+              style: TextStyle(
+                  color:
+                      isDark ? Colors.white : Colors.black87),
+              decoration: InputDecoration(
+                hintText: '••••••••',
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirm
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                    color: AppTheme.gold,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() =>
+                      _obscureConfirm = !_obscureConfirm),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          // Message
+          if (_message.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _isError
+                    ? AppTheme.errorRed.withOpacity(0.1)
+                    : AppTheme.foundMatch.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isError
+                      ? AppTheme.errorRed.withOpacity(0.3)
+                      : AppTheme.foundMatch.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isError
+                        ? Icons.error_outline
+                        : Icons.check_circle_outline,
+                    color: _isError
+                        ? AppTheme.errorRed
+                        : AppTheme.foundMatch,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _message,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: _isError
+                            ? AppTheme.errorRed
+                            : AppTheme.foundMatch,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          const SizedBox(height: 24),
+
+          // Button
+          GestureDetector(
+            onTap: _isLoading
+                ? null
+                : _accountVerified
+                    ? _resetPassword
+                    : _verify,
+            child: Container(
+              width: double.infinity,
+              height: 54,
+              decoration: BoxDecoration(
+                gradient: AppTheme.goldGradient,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: AppTheme.goldGlowSoft,
+              ),
+              child: Center(
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            color: Colors.black,
+                            strokeWidth: 2.5),
+                      )
+                    : Text(
+                        _accountVerified
+                            ? 'Reset Password'
+                            : 'Verify Account',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 }

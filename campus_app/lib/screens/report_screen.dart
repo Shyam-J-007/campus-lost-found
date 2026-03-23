@@ -533,6 +533,70 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
               ),
 
+              // AI identify button — shows after image is picked
+              if (_pickedFile != null) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () async {
+                    if (_pickedFile == null) return;
+
+                    // Upload image first
+                    String? imageUrl;
+                    if (kIsWeb) {
+                      imageUrl = await ApiService.uploadImageWeb(_pickedFile!);
+                    } else {
+                      imageUrl = await ApiService.uploadImage(_pickedFile!.path);
+                    }
+
+                    if (imageUrl == null) return;
+
+                    setState(() => _isLoading = true);
+                    final result = await ApiService.identifyImage(imageUrl);
+                    setState(() => _isLoading = false);
+
+                    if (result.containsKey('item_name')) {
+                      setState(() {
+                        _itemNameController.text = result['item_name'] ?? '';
+                        _descriptionController.text =
+                            result['description'] ?? '';
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('AI identified the item!'),
+                          backgroundColor: AppTheme.gold,
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                          color: AppTheme.gold, width: 1.5),
+                      color: AppTheme.gold.withOpacity(0.05),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.auto_awesome,
+                            color: AppTheme.gold, size: 18),
+                        SizedBox(width: 8),
+                        Text(
+                          'AI Identify Item',
+                          style: TextStyle(
+                            color: AppTheme.gold,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
               // Error
               if (_errorMessage.isNotEmpty) ...[
                 const SizedBox(height: 12),
