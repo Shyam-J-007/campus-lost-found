@@ -1,11 +1,40 @@
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ApiService {
-static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app/';
+  static const String baseUrl = 'https://campus-lost-found-production.up.railway.app';
+  static Future<Map<String, dynamic>> getAIMatches(
+      int lostItemId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/ai-match/$lostItemId'))
+          .timeout(const Duration(seconds: 30));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not get matches: $e'};
+    }
+  }
+
+  // ── AI Image Recognition ──────────────────────────────────
+  static Future<Map<String, dynamic>> identifyImage(
+      String imageUrl) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/ai-identify-image'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'image_url': imageUrl}),
+          )
+          .timeout(const Duration(seconds: 30));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not identify image: $e'};
+    }
+  }
+
   // ── Upload image (mobile) ─────────────────────────────────
   static Future<String?> uploadImage(String imagePath) async {
     try {
@@ -13,25 +42,19 @@ static const String baseUrl = 'https://campus-lost-found-production-1d75.up.rail
         'POST',
         Uri.parse('$baseUrl/upload-image'),
       );
-
       final ext = imagePath.split('.').last.toLowerCase();
       final mediaType = ext == 'png'
           ? MediaType('image', 'png')
           : MediaType('image', 'jpeg');
-
       request.files.add(await http.MultipartFile.fromPath(
         'image',
         imagePath,
         contentType: mediaType,
       ));
-
       final response = await request.send();
       final body = await response.stream.bytesToString();
       final data = jsonDecode(body);
-
-      if (data.containsKey('url')) {
-        return '$baseUrl${data['url']}';
-      }
+      if (data.containsKey('url')) return '$baseUrl${data['url']}';
       return null;
     } catch (e) {
       print('Upload error: $e');
@@ -47,7 +70,6 @@ static const String baseUrl = 'https://campus-lost-found-production-1d75.up.rail
         'POST',
         Uri.parse('$baseUrl/upload-image'),
       );
-
       request.files.add(http.MultipartFile.fromBytes(
         'image',
         bytes,
@@ -55,14 +77,10 @@ static const String baseUrl = 'https://campus-lost-found-production-1d75.up.rail
         contentType:
             MediaType('image', imageFile.name.split('.').last),
       ));
-
       final response = await request.send();
       final body = await response.stream.bytesToString();
       final data = jsonDecode(body);
-
-      if (data.containsKey('url')) {
-        return '$baseUrl${data['url']}';
-      }
+      if (data.containsKey('url')) return '$baseUrl${data['url']}';
       return null;
     } catch (e) {
       print('Web upload error: $e');
@@ -178,7 +196,7 @@ static const String baseUrl = 'https://campus-lost-found-production-1d75.up.rail
     }
   }
 
-  // ── Search items (lost or found) ──────────────────────────
+  // ── Search items ──────────────────────────────────────────
   static Future<List<dynamic>> searchItems(
     String query, {
     String type = 'lost',
@@ -196,14 +214,11 @@ static const String baseUrl = 'https://campus-lost-found-production-1d75.up.rail
     }
   }
 
-  // ── Check matches for user ────────────────────────────────
+  // ── Check matches ─────────────────────────────────────────
   static Future<List<dynamic>> checkMatches(int userId) async {
     try {
       final response = await http
-          .get(
-            Uri.parse('$baseUrl/check-matches/$userId'),
-            headers: {'Content-Type': 'application/json'},
-          )
+          .get(Uri.parse('$baseUrl/check-matches/$userId'))
           .timeout(const Duration(seconds: 10));
       return jsonDecode(response.body);
     } catch (e) {
@@ -212,113 +227,118 @@ static const String baseUrl = 'https://campus-lost-found-production-1d75.up.rail
   }
 
   // ── Get conversations ─────────────────────────────────────
-static Future<List<dynamic>> getConversations(int userId) async {
-  try {
-    final response = await http
-        .get(Uri.parse('$baseUrl/conversations/$userId'))
-        .timeout(const Duration(seconds: 10));
-    return jsonDecode(response.body);
-  } catch (e) {
-    return [];
+  static Future<List<dynamic>> getConversations(
+      int userId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/conversations/$userId'))
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return [];
+    }
   }
+
+  // ── Get messages ──────────────────────────────────────────
+  static Future<List<dynamic>> getMessages(
+      int userId, int otherId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/messages/$userId/$otherId'))
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // ── Send message ──────────────────────────────────────────
+  static Future<Map<String, dynamic>> sendMessage({
+    required int senderId,
+    required int receiverId,
+    required String message,
+    String matchItemName = '',
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/send-message'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'sender_id': senderId,
+              'receiver_id': receiverId,
+              'message': message,
+              'match_item_name': matchItemName,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not send message: $e'};
+    }
+  }
+
+  // ── Get unread count ──────────────────────────────────────
+  static Future<int> getUnreadCount(int userId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/unread-count/$userId'))
+          .timeout(const Duration(seconds: 10));
+      final data = jsonDecode(response.body);
+      return data['count'] ?? 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // ── Recover item ──────────────────────────────────────────
+  static Future<Map<String, dynamic>> recoverItem({
+    required int userId,
+    required String itemName,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/recover-item'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': userId,
+              'item_name': itemName,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not connect: $e'};
+    }
+  }
+
+  // ── Forgot password ───────────────────────────────────────
+  static Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+    required String studentId,
+    String? newPassword,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/forgot-password'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'email': email,
+              'student_id': studentId,
+              if (newPassword != null)
+                'new_password': newPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not connect to server: $e'};
+    }
+  }
+
+  // ── AI Match ──────────────────────────────────────────────
+  
 }
 
-// ── Get messages between two users ────────────────────────
-static Future<List<dynamic>> getMessages(
-    int userId, int otherId) async {
-  try {
-    final response = await http
-        .get(Uri.parse('$baseUrl/messages/$userId/$otherId'))
-        .timeout(const Duration(seconds: 10));
-    return jsonDecode(response.body);
-  } catch (e) {
-    return [];
-  }
-}
-
-// ── Send message ──────────────────────────────────────────
-static Future<Map<String, dynamic>> sendMessage({
-  required int senderId,
-  required int receiverId,
-  required String message,
-  String matchItemName = '',
-}) async {
-  try {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/send-message'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'sender_id': senderId,
-            'receiver_id': receiverId,
-            'message': message,
-            'match_item_name': matchItemName,
-          }),
-        )
-        .timeout(const Duration(seconds: 10));
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {'error': 'Could not send message: $e'};
-  }
-}
-
-// ── Get unread count ──────────────────────────────────────
-static Future<int> getUnreadCount(int userId) async {
-  try {
-    final response = await http
-        .get(Uri.parse('$baseUrl/unread-count/$userId'))
-        .timeout(const Duration(seconds: 10));
-    final data = jsonDecode(response.body);
-    return data['count'] ?? 0;
-  } catch (e) {
-    return 0;
-  }
-}
-
-// ── Recover item ──────────────────────────────────────────
-static Future<Map<String, dynamic>> recoverItem({
-  required int userId,
-  required String itemName,
-}) async {
-  try {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/recover-item'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'user_id': userId,
-            'item_name': itemName,
-          }),
-        )
-        .timeout(const Duration(seconds: 10));
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {'error': 'Could not connect: $e'};
-  }
-}
-// ── Forgot password ───────────────────────────────────────
-static Future<Map<String, dynamic>> forgotPassword({
-  required String email,
-  required String studentId,
-  String? newPassword,
-}) async {
-  try {
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/forgot-password'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'email': email,
-            'student_id': studentId,
-            if (newPassword != null) 'new_password': newPassword,
-          }),
-        )
-        .timeout(const Duration(seconds: 10));
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {'error': 'Could not connect to server: $e'};
-  }
-}
-
-
-}
