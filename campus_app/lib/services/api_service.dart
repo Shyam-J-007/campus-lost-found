@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 class ApiService {
-  static const String baseUrl = 'https://campus-lost-found-production.up.railway.app';
+  static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app';
 
   static Future<Map<String, dynamic>> identifyImageFromBytes(
     Uint8List imageBytes, String filename) async {
