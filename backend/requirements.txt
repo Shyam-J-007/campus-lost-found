@@ -4,6 +4,5 @@ mysql-connector-python
 bcrypt
 python-dotenv
 gunicorn
-anthropic
 requests
 google-generativeai
