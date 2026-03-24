@@ -9,22 +9,26 @@ import base64
 load_dotenv()
 
 app = Flask(__name__)
-# Remove the old CORS line and use this instead
 
+# ── FIXED CORS ────────────────────────────────────────────────
+# Do NOT use supports_credentials=True with origins="*" — browsers reject it
+CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
-CORS(app, supports_credentials=True, resources={r"/*": {
-    "origins": "*",
-    "allow_headers": ["Content-Type", "Authorization"],
-    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-}})
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return response
 
 @app.before_request
 def handle_options():
     if request.method == "OPTIONS":
         response = jsonify({})
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         return response, 200
 
 UPLOAD_FOLDER = 'uploads'
@@ -32,7 +36,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route("/")
 def home():
-    return {"message": "Lost & Found API running"}
+    return jsonify({"message": "Lost & Found API running"})
 
 # Serve uploaded images
 @app.route("/uploads/<filename>")
@@ -40,8 +44,10 @@ def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 # Register user
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["POST", "OPTIONS"])
 def register():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     db = None
     try:
         data = request.json
@@ -68,8 +74,10 @@ def register():
             db.close()
 
 # Login
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["POST", "OPTIONS"])
 def login():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     db = None
     try:
         data = request.json
@@ -101,8 +109,10 @@ def login():
             db.close()
 
 # Upload image
-@app.route("/upload-image", methods=["POST"])
+@app.route("/upload-image", methods=["POST", "OPTIONS"])
 def upload_image():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     try:
         if 'image' not in request.files:
             return jsonify({"error": "No image provided"}), 400
@@ -126,8 +136,10 @@ def upload_image():
         return jsonify({"error": str(e)}), 500
 
 # Report lost item
-@app.route("/lost-item", methods=["POST"])
+@app.route("/lost-item", methods=["POST", "OPTIONS"])
 def lost_item():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     db = None
     try:
         data = request.json
@@ -154,8 +166,10 @@ def lost_item():
             db.close()
 
 # Report found item
-@app.route("/found-item", methods=["POST"])
+@app.route("/found-item", methods=["POST", "OPTIONS"])
 def found_item():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     db = None
     try:
         data = request.json
@@ -181,7 +195,6 @@ def found_item():
         if db:
             db.close()
 
-# Search lost items
 # Search both lost and found items
 @app.route("/search")
 def search():
@@ -223,9 +236,7 @@ def check_matches(user_id):
     try:
         db = get_connection()
         cursor = db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT * FROM lost_items WHERE user_id = %s
-        """, (user_id,))
+        cursor.execute("SELECT * FROM lost_items WHERE user_id = %s", (user_id,))
         lost_items = cursor.fetchall()
 
         matches = []
@@ -263,10 +274,7 @@ def conversations(user_id):
         db = get_connection()
         cursor = db.cursor(dictionary=True)
         cursor.execute("""
-            SELECT 
-                m.*,
-                u1.name as sender_name,
-                u2.name as receiver_name
+            SELECT m.*, u1.name as sender_name, u2.name as receiver_name
             FROM messages m
             JOIN users u1 ON m.sender_id = u1.id
             JOIN users u2 ON m.receiver_id = u2.id
@@ -274,7 +282,6 @@ def conversations(user_id):
             ORDER BY m.created_at DESC
         """, (user_id, user_id))
         results = cursor.fetchall()
-        # Convert datetime to string
         for r in results:
             if r.get('created_at'):
                 r['created_at'] = str(r['created_at'])
@@ -304,7 +311,6 @@ def get_messages(user_id, other_id):
         for r in results:
             if r.get('created_at'):
                 r['created_at'] = str(r['created_at'])
-        # Mark messages as read
         cursor.execute("""
             UPDATE messages SET is_read = TRUE
             WHERE sender_id = %s AND receiver_id = %s
@@ -318,8 +324,10 @@ def get_messages(user_id, other_id):
             db.close()
 
 # Send a message
-@app.route("/send-message", methods=["POST"])
+@app.route("/send-message", methods=["POST", "OPTIONS"])
 def send_message():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     db = None
     try:
         data = request.json
@@ -335,10 +343,7 @@ def send_message():
             VALUES (%s, %s, %s, %s)
         """, (sender_id, receiver_id, message, match_item_name))
         db.commit()
-        return jsonify({
-            "message": "Message sent",
-            "notify_user": receiver_id
-        })
+        return jsonify({"message": "Message sent", "notify_user": receiver_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -364,7 +369,7 @@ def unread_count(user_id):
         if db:
             db.close()
 
-
+# Recover item
 @app.route("/recover-item", methods=["POST", "OPTIONS"])
 def recover_item():
     if request.method == "OPTIONS":
@@ -377,17 +382,12 @@ def recover_item():
 
         db = get_connection()
         cursor = db.cursor()
-
         cursor.execute("""
-            DELETE FROM lost_items
-            WHERE item_name = %s AND user_id = %s
+            DELETE FROM lost_items WHERE item_name = %s AND user_id = %s
         """, (item_name, user_id))
-
         cursor.execute("""
-            DELETE FROM found_items
-            WHERE item_name LIKE %s
+            DELETE FROM found_items WHERE item_name LIKE %s
         """, ('%' + item_name + '%',))
-
         db.commit()
         return jsonify({"message": "Item recovered and removed"})
     except Exception as e:
@@ -395,8 +395,12 @@ def recover_item():
     finally:
         if db:
             db.close()
-@app.route("/forgot-password", methods=["POST"])
+
+# Forgot password
+@app.route("/forgot-password", methods=["POST", "OPTIONS"])
 def forgot_password():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     db = None
     try:
         data = request.json
@@ -407,8 +411,7 @@ def forgot_password():
         db = get_connection()
         cursor = db.cursor(dictionary=True)
         cursor.execute("""
-            SELECT id, name FROM users
-            WHERE email = %s AND student_id = %s
+            SELECT id, name FROM users WHERE email = %s AND student_id = %s
         """, (email, student_id))
         user = cursor.fetchone()
 
@@ -417,16 +420,11 @@ def forgot_password():
 
         if new_password:
             hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
-            cursor.execute("""
-                UPDATE users SET password = %s WHERE id = %s
-            """, (hashed, user['id']))
+            cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, user['id']))
             db.commit()
             return jsonify({"message": "Password updated successfully"})
 
-        return jsonify({
-            "message": "Account verified",
-            "name": user['name']
-        })
+        return jsonify({"message": "Account verified", "name": user['name']})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -434,12 +432,11 @@ def forgot_password():
         if db:
             db.close()
 
-
-# Initialize Claude client
+# ── Claude client ─────────────────────────────────────────────
 def get_claude_client():
     return anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-# ── Feature 1: Smart Item Matching ────────────────────────────
+# ── AI Feature 1: Smart Item Matching ────────────────────────
 @app.route("/ai-match/<int:lost_item_id>", methods=["GET"])
 def ai_match(lost_item_id):
     db = None
@@ -447,23 +444,18 @@ def ai_match(lost_item_id):
         db = get_connection()
         cursor = db.cursor(dictionary=True)
 
-        # Get the lost item
-        cursor.execute("""
-            SELECT * FROM lost_items WHERE id = %s
-        """, (lost_item_id,))
+        cursor.execute("SELECT * FROM lost_items WHERE id = %s", (lost_item_id,))
         lost_item = cursor.fetchone()
 
         if not lost_item:
             return jsonify({"error": "Lost item not found"}), 404
 
-        # Get all found items
         cursor.execute("SELECT * FROM found_items")
         found_items = cursor.fetchall()
 
         if not found_items:
             return jsonify({"matches": []})
 
-        # Build prompt for Claude
         found_items_text = "\n".join([
             f"Found Item {i+1} (ID: {f['id']}): {f['item_name']} - {f['description']} - Found at {f['location_found']} on {f['date_found']}"
             for i, f in enumerate(found_items)
@@ -504,7 +496,6 @@ Only respond with valid JSON, nothing else."""
         import json
         result = json.loads(message.content[0].text)
 
-        # Add found item details to matches
         found_dict = {f['id']: f for f in found_items}
         for match in result.get('matches', []):
             fid = match['found_item_id']
@@ -522,10 +513,11 @@ Only respond with valid JSON, nothing else."""
         if db:
             db.close()
 
-
-# ── Feature 2: Image Recognition ──────────────────────────────
-@app.route("/ai-identify-image", methods=["POST"])
+# ── AI Feature 2: Image Recognition ──────────────────────────
+@app.route("/ai-identify-image", methods=["POST", "OPTIONS"])
 def ai_identify_image():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     try:
         data = request.json
         image_url = data.get("image_url")
@@ -533,12 +525,9 @@ def ai_identify_image():
         if not image_url:
             return jsonify({"error": "No image URL provided"}), 400
 
-        # Fetch image and convert to base64
         import requests as req_lib
         img_response = req_lib.get(image_url)
         image_data = base64.standard_b64encode(img_response.content).decode("utf-8")
-
-        # Detect content type
         content_type = img_response.headers.get('content-type', 'image/jpeg')
 
         client = get_claude_client()
@@ -563,7 +552,7 @@ def ai_identify_image():
 Respond in JSON format only:
 {
   "item_name": "short item name (e.g. Wallet, Phone, Keys)",
-  "description": "brief description of the item including color, brand if visible, and any distinctive features",
+  "description": "brief description including color, brand if visible, and distinctive features",
   "category": "one of: Electronics, Accessories, Documents, Clothing, Bags, Other"
 }
 Only respond with valid JSON, nothing else."""
@@ -579,6 +568,7 @@ Only respond with valid JSON, nothing else."""
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False)

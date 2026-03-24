@@ -5,7 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://campus-lost-found-production.up.railway.app';
+  static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app/';
   static Future<Map<String, dynamic>> getAIMatches(
       int lostItemId) async {
     try {
