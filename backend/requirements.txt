@@ -6,3 +6,4 @@ python-dotenv
 gunicorn
 anthropic
 requests
+google-generativeai
