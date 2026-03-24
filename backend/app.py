@@ -366,7 +366,7 @@ Respond ONLY with valid JSON, no markdown:
 
         client = get_gemini_client()
         response = client.models.generate_content(
-            model="gemini-1.5-flash-8b"
+            model="gemini-1.5-flash-8b",
             contents=prompt
         )
 
