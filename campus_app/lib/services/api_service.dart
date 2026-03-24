@@ -1,67 +1,13 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 
 class ApiService {
-  static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app';
-
-// ── AI Image Recognition from bytes ──────────────────────
-static Future<Map<String, dynamic>> identifyImageFromBytes(
-    Uint8List bytes, String filename) async {
-  try {
-    final base64Image = base64Encode(bytes);
-    final ext = filename.split('.').last.toLowerCase();
-    final contentType =
-        ext == 'png' ? 'image/png' : 'image/jpeg';
-
-    final response = await http
-        .post(
-          Uri.parse('$baseUrl/ai-identify-image'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'image_base64': base64Image,
-            'content_type': contentType,
-          }),
-        )
-        .timeout(const Duration(seconds: 30));
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {'error': 'Could not identify image: $e'};
-  }
-}
-  static Future<Map<String, dynamic>> getAIMatches(
-      int lostItemId) async {
-    try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/ai-match/$lostItemId'))
-          .timeout(const Duration(seconds: 30));
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'error': 'Could not get matches: $e'};
-    }
-  }
-
-
-
-  // ── AI Image Recognition ──────────────────────────────────
-  static Future<Map<String, dynamic>> identifyImage(
-      String imageUrl) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/ai-identify-image'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'image_url': imageUrl}),
-          )
-          .timeout(const Duration(seconds: 30));
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'error': 'Could not identify image: $e'};
-    }
-  }
+  static const String baseUrl =
+      'https://campus-lost-found-production-1d75.up.railway.app';
 
   // ── Upload image (mobile) ─────────────────────────────────
   static Future<String?> uploadImage(String imagePath) async {
@@ -231,10 +177,7 @@ static Future<Map<String, dynamic>> identifyImageFromBytes(
   }) async {
     try {
       final response = await http
-          .get(
-            Uri.parse('$baseUrl/search?q=$query&type=$type'),
-            headers: {'Content-Type': 'application/json'},
-          )
+          .get(Uri.parse('$baseUrl/search?q=$query&type=$type'))
           .timeout(const Duration(seconds: 10));
       return jsonDecode(response.body);
     } catch (e) {
@@ -348,15 +291,18 @@ static Future<Map<String, dynamic>> identifyImageFromBytes(
     String? newPassword,
   }) async {
     try {
+      final body = <String, dynamic>{
+        'email': email,
+        'student_id': studentId,
+      };
+      if (newPassword != null) {
+        body['new_password'] = newPassword;
+      }
       final response = await http
           .post(
             Uri.parse('$baseUrl/forgot-password'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'email': email,
-              'student_id': studentId,
-              'new_password': ?newPassword,
-            }),
+            body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 10));
       return jsonDecode(response.body);
@@ -366,5 +312,56 @@ static Future<Map<String, dynamic>> identifyImageFromBytes(
   }
 
   // ── AI Match ──────────────────────────────────────────────
-  
+  static Future<Map<String, dynamic>> getAIMatches(
+      int lostItemId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/ai-match/$lostItemId'))
+          .timeout(const Duration(seconds: 30));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not get matches: $e'};
+    }
+  }
+
+  // ── AI Image Recognition (URL) ────────────────────────────
+  static Future<Map<String, dynamic>> identifyImage(
+      String imageUrl) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/ai-identify-image'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'image_url': imageUrl}),
+          )
+          .timeout(const Duration(seconds: 30));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not identify image: $e'};
+    }
+  }
+
+  // ── AI Image Recognition (bytes) ──────────────────────────
+  static Future<Map<String, dynamic>> identifyImageFromBytes(
+      Uint8List bytes, String filename) async {
+    try {
+      final base64Image = base64Encode(bytes);
+      final ext = filename.split('.').last.toLowerCase();
+      final contentType =
+          ext == 'png' ? 'image/png' : 'image/jpeg';
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/ai-identify-image'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'image_base64': base64Image,
+              'content_type': contentType,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'Could not identify image: $e'};
+    }
+  }
 }
