@@ -327,8 +327,7 @@ class ApiService {
             body: jsonEncode({
               'email': email,
               'student_id': studentId,
-              if (newPassword != null)
-                'new_password': newPassword,
+              'new_password': ?newPassword,
             }),
           )
           .timeout(const Duration(seconds: 10));
