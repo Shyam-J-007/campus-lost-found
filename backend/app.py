@@ -370,7 +370,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
 
         client = get_groq_client()
         response = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",  # ✅ Correct
+            model="llava-v1.5-7b-4096-preview",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=1000,
