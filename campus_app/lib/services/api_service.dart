@@ -8,12 +8,14 @@ import 'dart:typed_data';
 class ApiService {
   static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app';
 
-  static Future<Map<String, dynamic>> identifyImageFromBytes(
-    Uint8List imageBytes, String filename) async {
+// ── AI Image Recognition from bytes ──────────────────────
+static Future<Map<String, dynamic>> identifyImageFromBytes(
+    Uint8List bytes, String filename) async {
   try {
-    final base64Image = base64Encode(imageBytes);
+    final base64Image = base64Encode(bytes);
     final ext = filename.split('.').last.toLowerCase();
-    final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
+    final contentType =
+        ext == 'png' ? 'image/png' : 'image/jpeg';
 
     final response = await http
         .post(
@@ -24,7 +26,7 @@ class ApiService {
             'content_type': contentType,
           }),
         )
-        .timeout(const Duration(seconds: 60));
+        .timeout(const Duration(seconds: 30));
     return jsonDecode(response.body);
   } catch (e) {
     return {'error': 'Could not identify image: $e'};
@@ -353,7 +355,7 @@ class ApiService {
             body: jsonEncode({
               'email': email,
               'student_id': studentId,
-              if (newPassword != null) 'new_password': newPassword,
+              'new_password': ?newPassword,
             }),
           )
           .timeout(const Duration(seconds: 10));
