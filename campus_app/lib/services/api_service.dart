@@ -3,9 +3,33 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 class ApiService {
-  static const String baseUrl = 'https://campus-lost-found-production-1d75.up.railway.app/';
+  static const String baseUrl = 'https://campus-lost-found-production.up.railway.app';
+
+  static Future<Map<String, dynamic>> identifyImageFromBytes(
+    Uint8List imageBytes, String filename) async {
+  try {
+    final base64Image = base64Encode(imageBytes);
+    final ext = filename.split('.').last.toLowerCase();
+    final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
+
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/ai-identify-image'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'image_base64': base64Image,
+            'content_type': contentType,
+          }),
+        )
+        .timeout(const Duration(seconds: 60));
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'error': 'Could not identify image: $e'};
+  }
+}
   static Future<Map<String, dynamic>> getAIMatches(
       int lostItemId) async {
     try {
@@ -17,6 +41,8 @@ class ApiService {
       return {'error': 'Could not get matches: $e'};
     }
   }
+
+
 
   // ── AI Image Recognition ──────────────────────────────────
   static Future<Map<String, dynamic>> identifyImage(
@@ -340,4 +366,3 @@ class ApiService {
   // ── AI Match ──────────────────────────────────────────────
   
 }
-

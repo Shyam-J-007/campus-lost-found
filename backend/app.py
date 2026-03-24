@@ -520,35 +520,30 @@ def ai_identify_image():
         return jsonify({}), 200
     try:
         data = request.json
-        image_url = data.get("image_url")
+        image_b64 = data.get("image_base64")
+        content_type = data.get("content_type", "image/jpeg")
 
-        if not image_url:
-            return jsonify({"error": "No image URL provided"}), 400
-
-        import requests as req_lib
-        img_response = req_lib.get(image_url)
-        image_data = base64.standard_b64encode(img_response.content).decode("utf-8")
-        content_type = img_response.headers.get('content-type', 'image/jpeg')
+        if not image_b64:
+            return jsonify({"error": "No image data provided"}), 400
 
         client = get_claude_client()
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=500,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": content_type,
-                                "data": image_data,
-                            },
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": content_type,
+                            "data": image_b64,
                         },
-                        {
-                            "type": "text",
-                            "text": """Identify this lost/found item from the image.
+                    },
+                    {
+                        "type": "text",
+                        "text": """Identify this lost/found item from the image.
 Respond in JSON format only:
 {
   "item_name": "short item name (e.g. Wallet, Phone, Keys)",
@@ -556,10 +551,9 @@ Respond in JSON format only:
   "category": "one of: Electronics, Accessories, Documents, Clothing, Bags, Other"
 }
 Only respond with valid JSON, nothing else."""
-                        }
-                    ],
-                }
-            ],
+                    }
+                ],
+            }],
         )
 
         import json
@@ -568,7 +562,6 @@ Only respond with valid JSON, nothing else."""
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False)

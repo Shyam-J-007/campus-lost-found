@@ -540,25 +540,20 @@ class _ReportScreenState extends State<ReportScreen> {
                   onTap: () async {
                     if (_pickedFile == null) return;
 
-                    // Upload image first
-                    String? imageUrl;
-                    if (kIsWeb) {
-                      imageUrl = await ApiService.uploadImageWeb(_pickedFile!);
-                    } else {
-                      imageUrl = await ApiService.uploadImage(_pickedFile!.path);
-                    }
-
-                    if (imageUrl == null) return;
-
                     setState(() => _isLoading = true);
-                    final result = await ApiService.identifyImage(imageUrl);
+
+                    final bytes = _webImageBytes ?? await _pickedFile!.readAsBytes();
+                    final result = await ApiService.identifyImageFromBytes(
+                      bytes,
+                      _pickedFile!.name,
+                    );
+
                     setState(() => _isLoading = false);
 
                     if (result.containsKey('item_name')) {
                       setState(() {
                         _itemNameController.text = result['item_name'] ?? '';
-                        _descriptionController.text =
-                            result['description'] ?? '';
+                        _descriptionController.text = result['description'] ?? '';
                       });
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -566,8 +561,16 @@ class _ReportScreenState extends State<ReportScreen> {
                           backgroundColor: AppTheme.gold,
                         ),
                       );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(result['error'] ?? 'Could not identify item'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
                     }
                   },
+                
                   child: Container(
                     width: double.infinity,
                     height: 46,
