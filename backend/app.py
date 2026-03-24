@@ -2,10 +2,10 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import bcrypt
 import os
+import base64
 from db import get_connection
 from dotenv import load_dotenv
-import anthropic
-import base64
+import google.generativeai as genai
 load_dotenv()
 
 app = Flask(__name__)
