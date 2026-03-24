@@ -5,7 +5,8 @@ import os
 import base64
 from db import get_connection
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
@@ -35,8 +36,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ── Gemini client ─────────────────────────────────────────────
 def get_gemini_client():
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    return genai.GenerativeModel("gemini-1.5-flash")
+    return genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 @app.route("/")
 def home():
@@ -364,8 +364,12 @@ Give a match score 0-100 for each found item. Only include items with score abov
 Respond ONLY with valid JSON, no markdown:
 {{"matches": [{{"found_item_id": 1, "score": 85, "reason": "Same item type"}}]}}"""
 
-        model = get_gemini_client()
-        response = model.generate_content(prompt)
+        client = get_gemini_client()
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+
         import json
         text = response.text.strip().strip("```json").strip("```").strip()
         result = json.loads(text)
@@ -400,13 +404,16 @@ def ai_identify_image():
 
         image_bytes = base64.b64decode(image_b64)
 
-        model = get_gemini_client()
-        response = model.generate_content([
-            {"mime_type": content_type, "data": image_bytes},
-            """Identify this lost/found item from the image.
+        client = get_gemini_client()
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type=content_type),
+                """Identify this lost/found item from the image.
 Respond ONLY with valid JSON, no markdown:
 {"item_name": "short name e.g. Wallet", "description": "color, brand, distinctive features", "category": "Electronics|Accessories|Documents|Clothing|Bags|Other"}"""
-        ])
+            ]
+        )
 
         import json
         text = response.text.strip().strip("```json").strip("```").strip()
