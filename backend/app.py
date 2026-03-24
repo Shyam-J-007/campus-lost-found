@@ -370,7 +370,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
 
         client = get_groq_client()
         response = client.chat.completions.create(
-            model="llava-v1.5-7b-4096-preview",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=1000,
@@ -404,14 +404,12 @@ def ai_identify_image():
     try:
         data = request.json
         image_b64 = data.get("image_base64")
-        content_type = data.get("content_type", "image/jpeg")
-
         if not image_b64:
             return jsonify({"error": "No image data provided"}), 400
 
         client = get_groq_client()
         response = client.chat.completions.create(
-            model="llama-4-scout-17b-16e-instruct",
+            model="meta-llama/llama-4-scout-17b-16e-instruct",  # ✅ Available on all Groq accounts
             messages=[
                 {
                     "role": "user",
@@ -419,14 +417,14 @@ def ai_identify_image():
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:{content_type};base64,{image_b64}"
+                                "url": f"data:{data.get('content_type','image/jpeg')};base64,{image_b64}"
                             }
                         },
                         {
                             "type": "text",
-                            "text": """Identify this lost/found item from the image.
-Respond ONLY with valid JSON, no markdown, no explanation:
-{"item_name": "short name e.g. Wallet", "description": "color, brand, distinctive features", "category": "Electronics|Accessories|Documents|Clothing|Bags|Other"}"""
+                            "text": """Identify this lost/found item.
+Respond ONLY with valid JSON:
+{"item_name": "short name", "description": "color, brand, features", "category": "Electronics|Accessories|Documents|Clothing|Bags|Other"}"""
                         }
                     ]
                 }
@@ -439,11 +437,11 @@ Respond ONLY with valid JSON, no markdown, no explanation:
         text = response.choices[0].message.content.strip()
         text = text.replace("```json", "").replace("```", "").strip()
         result = json.loads(text)
+
         return jsonify(result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
