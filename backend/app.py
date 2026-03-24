@@ -1,3 +1,4 @@
+from groq import Groq
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import bcrypt
@@ -5,8 +6,7 @@ import os
 import base64
 from db import get_connection
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+
 
 load_dotenv()
 
@@ -34,9 +34,8 @@ def handle_options():
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# ── Gemini client ─────────────────────────────────────────────
-def get_gemini_client():
-    return genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+def get_groq_client():
+    return Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 @app.route("/")
 def home():
@@ -167,7 +166,12 @@ def search():
         else:
             sql = "SELECT *, 'lost' as item_type FROM lost_items WHERE item_name LIKE %s ORDER BY id DESC"
         cursor.execute(sql, ('%' + q + '%',))
-        return jsonify(cursor.fetchall())
+        results = cursor.fetchall()
+        for r in results:
+            for k, v in r.items():
+                if hasattr(v, 'isoformat'):
+                    r[k] = str(v)
+        return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -328,7 +332,7 @@ def forgot_password():
     finally:
         if db: db.close()
 
-# ── AI Feature 1: Smart Matching with Gemini ──────────────────
+# ── AI Feature 1: Smart Matching with Llama ───────────────────
 @app.route("/ai-match/<int:lost_item_id>", methods=["GET"])
 def ai_match(lost_item_id):
     db = None
@@ -361,17 +365,20 @@ Found Items:
 {found_items_text}
 
 Give a match score 0-100 for each found item. Only include items with score above 30.
-Respond ONLY with valid JSON, no markdown:
+Respond ONLY with valid JSON, no markdown, no explanation:
 {{"matches": [{{"found_item_id": 1, "score": 85, "reason": "Same item type"}}]}}"""
 
-        client = get_gemini_client()
-        response = client.models.generate_content(
-            model="gemini-1.5-flash-8b",
-            contents=prompt
+        client = get_groq_client()
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=1000,
         )
 
         import json
-        text = response.text.strip().strip("```json").strip("```").strip()
+        text = response.choices[0].message.content.strip()
+        text = text.replace("```json", "").replace("```", "").strip()
         result = json.loads(text)
 
         found_dict = {f['id']: f for f in found_items}
@@ -389,7 +396,7 @@ Respond ONLY with valid JSON, no markdown:
     finally:
         if db: db.close()
 
-# ── AI Feature 2: Image Recognition with Gemini ───────────────
+# ── AI Feature 2: Image Recognition with Llama Vision ─────────
 @app.route("/ai-identify-image", methods=["POST", "OPTIONS"])
 def ai_identify_image():
     if request.method == "OPTIONS":
@@ -402,21 +409,35 @@ def ai_identify_image():
         if not image_b64:
             return jsonify({"error": "No image data provided"}), 400
 
-        image_bytes = base64.b64decode(image_b64)
-
-        client = get_gemini_client()
-        response = client.models.generate_content(
-            model="gemini-1.5-flash-8b",
-            contents=[
-                types.Part.from_bytes(data=image_bytes, mime_type=content_type),
-                """Identify this lost/found item from the image.
-Respond ONLY with valid JSON, no markdown:
+        client = get_groq_client()
+        response = client.chat.completions.create(
+            model="llama-4-scout-17b-16e-instruct",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{content_type};base64,{image_b64}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": """Identify this lost/found item from the image.
+Respond ONLY with valid JSON, no markdown, no explanation:
 {"item_name": "short name e.g. Wallet", "description": "color, brand, distinctive features", "category": "Electronics|Accessories|Documents|Clothing|Bags|Other"}"""
-            ]
+                        }
+                    ]
+                }
+            ],
+            temperature=0.1,
+            max_tokens=500,
         )
 
         import json
-        text = response.text.strip().strip("```json").strip("```").strip()
+        text = response.choices[0].message.content.strip()
+        text = text.replace("```json", "").replace("```", "").strip()
         result = json.loads(text)
         return jsonify(result)
 
