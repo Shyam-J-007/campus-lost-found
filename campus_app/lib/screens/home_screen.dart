@@ -22,6 +22,244 @@ class _HomeScreenState extends State<HomeScreen> {
   int _userId = 0;
   int _unreadMessages = 0;
   final _searchController = TextEditingController();
+  List<dynamic> _aiMatches = [];
+  bool _aiMatchesLoading = false;
+  bool _aiMatchesDismissed = false;
+  DateTime? _lastFoundItemCheck;
+
+  Future<void> _checkAIHomeMatches() async {
+  if (_userId == 0) return;
+  
+  // Only run when found items tab was last loaded or on first load
+  final prefs = await SharedPreferences.getInstance();
+  final lastCheck = prefs.getString('last_ai_home_check');
+  
+  setState(() => _aiMatchesLoading = true);
+  
+  final result = await ApiService.getHomeAIMatches(
+    _userId,
+    since: lastCheck,
+  );
+  
+  // Save current time as last check
+  await prefs.setString(
+    'last_ai_home_check',
+    DateTime.now().toUtc().toIso8601String(),
+  );
+  
+  if (mounted) {
+    setState(() {
+      _aiMatches = result['matches'] ?? [];
+      _aiMatchesLoading = false;
+      _aiMatchesDismissed = false;
+    });
+  }
+}
+
+  Widget _buildAIMatchBanner(bool isDark) {
+  if (_aiMatchesLoading) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.gold.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.gold.withOpacity(0.3)),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 16, height: 16,
+            child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2),
+          ),
+          SizedBox(width: 12),
+          Text(
+            'AI is scanning new found items for you...',
+            style: TextStyle(color: AppTheme.gold, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  if (_aiMatchesDismissed || _aiMatches.isEmpty) return const SizedBox.shrink();
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          AppTheme.gold.withOpacity(0.13),
+          AppTheme.gold.withOpacity(0.05),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppTheme.gold.withOpacity(0.45)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Header row ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 0),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: AppTheme.gold, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'AI found ${_aiMatches.length} possible match${_aiMatches.length > 1 ? 'es' : ''}!',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() => _aiMatchesDismissed = true),
+                child: Icon(Icons.close, size: 18,
+                    color: isDark ? Colors.white38 : Colors.black38),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // ── Match cards (horizontal scroll) ──
+        SizedBox(
+          height: 148,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            itemCount: _aiMatches.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final match = _aiMatches[index] as Map<String, dynamic>;
+              final score = match['score'] as int? ?? 0;
+              final isHighMatch = score >= 80;
+              final color = isHighMatch ? AppTheme.foundMatch : AppTheme.gold;
+
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ChatScreen(),
+                    settings: RouteSettings(
+                      arguments: {
+                        'other_user_id': match['finder_user_id'] ?? 0,
+                        'other_name': match['finder_name'] ?? 'Finder',
+                        'item_name': match['found_item_name'] ?? '',
+                      },
+                    ),
+                  ),
+                ),
+                child: Container(
+                  width: 220,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppTheme.darkSurface
+                        : AppTheme.lightSurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: color.withOpacity(0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Score + item names row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${match['lost_item_name']} → ${match['found_item_name']}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$score%',
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Reason
+                      Text(
+                        match['reason'] ?? '',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? Colors.white60 : Colors.black54,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Location
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              size: 11, color: AppTheme.gold),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              match['found_location'] ?? '',
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppTheme.gold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      // Tap to message CTA
+                      Row(
+                        children: [
+                          const Icon(Icons.message_outlined,
+                              size: 11, color: AppTheme.gold),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Tap to message ${match['finder_name'] ?? 'finder'}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.gold,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   final List<Map<String, dynamic>> _suggestions = [
     {
@@ -101,6 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadItems();
     await _checkMatches();
     await _checkUnread();
+    await _checkAIHomeMatches(); 
   }
 
   Future<void> _loadItems() async {
@@ -715,7 +954,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _suggestions.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(width: 12),
                           itemBuilder: (context, index) {
                             final s = _suggestions[index];
@@ -821,13 +1060,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               _showLost = false;
                               setState(() {});
                               await _loadItems();
+                              await _checkAIHomeMatches();
                             }),
                           ],
                         ),
                       ),
 
                       const SizedBox(height: 16),
-
+                      _buildAIMatchBanner(isDark),
                       // Items list
                       if (_isLoading)
                         const Center(
