@@ -609,9 +609,9 @@ def ai_home_matches(user_id):
 
         for lost in lost_items:
             for found in found_items:
-                # Skip if the finder is the same user
-                if found['user_id'] == user_id:
-                    continue
+                # Only skip if this user reported both the lost AND found item
+                # (don't skip just because they posted a found item)
+                pass  # remove the skip entirely
 
                 prompt = f"""You are a lost and found matching assistant.
 Compare these two items and give a match score 0-100.
