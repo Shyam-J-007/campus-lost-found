@@ -8,6 +8,22 @@ import 'package:image_picker/image_picker.dart';
 class ApiService {
   static const String baseUrl =
       'https://campus-lost-found-production-1d75.up.railway.app';
+
+  // ── AI Home Matches (new found items only) ────────────────────
+static Future<Map<String, dynamic>> getHomeAIMatches(
+    int userId, {String? since}) async {
+  try {
+    final uri = since != null
+        ? Uri.parse('$baseUrl/ai-home-matches/$userId?since=${Uri.encodeComponent(since)}')
+        : Uri.parse('$baseUrl/ai-home-matches/$userId');
+    final response = await http
+        .get(uri)
+        .timeout(const Duration(seconds: 90)); // AI needs more time
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'error': 'Could not get AI matches: $e', 'matches': []};
+  }
+}
   
   // ── AI Smart Match ────────────────────────────────────────────
 // Add this method to your ApiService class in api_service.dart

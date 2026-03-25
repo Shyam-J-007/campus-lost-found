@@ -572,6 +572,103 @@ Respond ONLY with valid JSON, no markdown:
     finally:
         if db: db.close()
 
+# ── AI Feature 4: Home Screen AI Matches (new found items only) ──
+@app.route("/ai-home-matches/<int:user_id>", methods=["GET"])
+def ai_home_matches(user_id):
+    db = None
+    try:
+        # Optional: only check found items newer than this timestamp
+        since = request.args.get("since", None)  # ISO string or None
+
+        db = get_connection()
+        cursor = db.cursor(dictionary=True)
+
+        # Get this user's lost items
+        cursor.execute("SELECT * FROM lost_items WHERE user_id = %s", (user_id,))
+        lost_items = cursor.fetchall()
+        if not lost_items:
+            return jsonify({"matches": []})
+
+        # Get found items — filtered by date if 'since' provided
+        if since:
+            cursor.execute(
+                "SELECT f.*, u.name as finder_name FROM found_items f JOIN users u ON f.user_id = u.id WHERE f.created_at > %s ORDER BY f.id DESC",
+                (since,)
+            )
+        else:
+            cursor.execute(
+                "SELECT f.*, u.name as finder_name FROM found_items f JOIN users u ON f.user_id = u.id ORDER BY f.id DESC LIMIT 20"
+            )
+        found_items = cursor.fetchall()
+        if not found_items:
+            return jsonify({"matches": []})
+
+        client = get_groq_client()
+        import json
+        all_matches = []
+
+        for lost in lost_items:
+            for found in found_items:
+                # Skip if the finder is the same user
+                if found['user_id'] == user_id:
+                    continue
+
+                prompt = f"""You are a lost and found matching assistant.
+Compare these two items and give a match score 0-100.
+
+Lost Item:
+- Name: {lost['item_name']}
+- Description: {lost['description']}
+- Lost Location: {lost['location_lost']}
+- Date Lost: {lost['date_lost']}
+
+Found Item:
+- Name: {found['item_name']}
+- Description: {found['description']}
+- Found Location: {found['location_found']}
+- Date Found: {found['date_found']}
+
+is_match = true if score >= 60.
+Respond ONLY with valid JSON, no markdown:
+{{"score": 85, "reason": "Same item type and matching description", "is_match": true}}"""
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=200,
+                )
+                text = response.choices[0].message.content.strip()
+                text = text.replace("```json", "").replace("```", "").strip()
+                result = json.loads(text)
+
+                if result.get("is_match") and result.get("score", 0) >= 30:
+                    all_matches.append({
+                        "lost_item_id": lost['id'],
+                        "lost_item_name": lost['item_name'],
+                        "lost_description": lost['description'],
+                        "lost_location": lost['location_lost'],
+                        "found_item_id": found['id'],
+                        "found_item_name": found['item_name'],
+                        "found_description": found['description'],
+                        "found_location": found['location_found'],
+                        "found_date": str(found['date_found']),
+                        "finder_user_id": found['user_id'],
+                        "finder_name": found.get('finder_name', 'Someone'),
+                        "found_image_url": found.get('image_url'),
+                        "lost_image_url": lost.get('image_url'),
+                        "score": result.get("score", 0),
+                        "reason": result.get("reason", ""),
+                    })
+
+        all_matches.sort(key=lambda x: x['score'], reverse=True)
+        return jsonify({"matches": all_matches})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db: db.close()
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
