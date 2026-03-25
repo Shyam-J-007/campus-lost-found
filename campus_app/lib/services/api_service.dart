@@ -8,6 +8,61 @@ import 'package:image_picker/image_picker.dart';
 class ApiService {
   static const String baseUrl =
       'https://campus-lost-found-production-1d75.up.railway.app';
+  
+  // ── AI Smart Match ────────────────────────────────────────────
+// Add this method to your ApiService class in api_service.dart
+
+static Future<Map<String, dynamic>> checkSmartMatch({
+  required int userId,
+  required String foundItemName,
+  required String foundItemDescription,
+  required String foundItemLocation,
+  required String foundItemDate,
+  String? foundImageUrl,
+}) async {
+  try {
+    // If found item has an image URL, fetch it and convert to base64
+    String? imageB64;
+    String? contentType;
+
+    if (foundImageUrl != null && foundImageUrl.isNotEmpty) {
+      try {
+        final imageResponse = await http.get(Uri.parse(foundImageUrl));
+        if (imageResponse.statusCode == 200) {
+          imageB64 = base64Encode(imageResponse.bodyBytes);
+          contentType = imageResponse.headers['content-type'] ?? 'image/jpeg';
+        }
+      } catch (_) {
+        // Image fetch failed — proceed with text only
+      }
+    }
+
+    final body = <String, dynamic>{
+      'user_id': userId,
+      'found_item_name': foundItemName,
+      'found_item_description': foundItemDescription,
+      'found_item_location': foundItemLocation,
+      'found_item_date': foundItemDate,
+    };
+
+    if (imageB64 != null) {
+      body['found_image_base64'] = imageB64;
+      body['found_image_content_type'] = contentType;
+    }
+
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/ai-smart-match'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 60));
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'error': 'Could not check match: $e', 'matches': []};
+  }
+}
 
   // ── Upload image (mobile) ─────────────────────────────────
   static Future<String?> uploadImage(String imagePath) async {

@@ -409,7 +409,7 @@ def ai_identify_image():
 
         client = get_groq_client()
         response = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",  # ✅ Available on all Groq accounts
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
             messages=[
                 {
                     "role": "user",
@@ -437,11 +437,142 @@ Respond ONLY with valid JSON:
         text = response.choices[0].message.content.strip()
         text = text.replace("```json", "").replace("```", "").strip()
         result = json.loads(text)
-
         return jsonify(result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# ── AI Feature 3: Smart Match Found Item vs User's Lost Items ──
+@app.route("/ai-smart-match", methods=["POST", "OPTIONS"])
+def ai_smart_match():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+    db = None
+    try:
+        data = request.json
+        user_id = data.get("user_id")
+        found_item_name = data.get("found_item_name", "")
+        found_item_description = data.get("found_item_description", "")
+        found_item_location = data.get("found_item_location", "")
+        found_item_date = data.get("found_item_date", "")
+        found_image_b64 = data.get("found_image_base64")       # optional
+        found_image_type = data.get("found_image_content_type", "image/jpeg")
+
+        if not user_id:
+            return jsonify({"error": "user_id required"}), 400
+
+        # Get all lost items for this user
+        db = get_connection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM lost_items WHERE user_id = %s", (user_id,))
+        lost_items = cursor.fetchall()
+
+        if not lost_items:
+            return jsonify({"matches": []})
+
+        client = get_groq_client()
+        import json
+        results = []
+
+        for lost in lost_items:
+            # ── With image: use vision model ──────────────
+            if found_image_b64:
+                prompt_text = f"""You are a lost and found matching assistant with vision capability.
+
+A found item image is attached. Compare it carefully with this lost item:
+- Lost Item Name: {lost['item_name']}
+- Lost Description: {lost['description']}
+- Lost Location: {lost['location_lost']}
+- Date Lost: {lost['date_lost']}
+
+Found Item Text Details:
+- Name: {found_item_name}
+- Description: {found_item_description}
+- Found Location: {found_item_location}
+- Date Found: {found_item_date}
+
+Analyze the image AND text details together and give a match score 0-100.
+is_match = true if score >= 60.
+Respond ONLY with valid JSON, no markdown:
+{{"score": 85, "reason": "The image shows a black wallet matching the lost item description", "is_match": true}}"""
+
+                response = client.chat.completions.create(
+                    model="meta-llama/llama-4-scout-17b-16e-instruct",
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{found_image_type};base64,{found_image_b64}"
+                                }
+                            },
+                            {"type": "text", "text": prompt_text}
+                        ]
+                    }],
+                    temperature=0.1,
+                    max_tokens=300,
+                )
+            else:
+                # ── Text only comparison ──────────────────
+                prompt_text = f"""You are a lost and found matching assistant.
+
+Compare these two items and give a match score 0-100:
+
+Lost Item:
+- Name: {lost['item_name']}
+- Description: {lost['description']}
+- Lost Location: {lost['location_lost']}
+- Date Lost: {lost['date_lost']}
+
+Found Item:
+- Name: {found_item_name}
+- Description: {found_item_description}
+- Found Location: {found_item_location}
+- Date Found: {found_item_date}
+
+is_match = true if score >= 60.
+Respond ONLY with valid JSON, no markdown:
+{{"score": 85, "reason": "Same item type and matching description", "is_match": true}}"""
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt_text}],
+                    temperature=0.1,
+                    max_tokens=300,
+                )
+
+            text = response.choices[0].message.content.strip()
+            text = text.replace("```json", "").replace("```", "").strip()
+            match_result = json.loads(text)
+
+            results.append({
+                "lost_item_id": lost['id'],
+                "lost_item_name": lost['item_name'],
+                "lost_description": lost['description'],
+                "lost_location": lost['location_lost'],
+                "lost_date": str(lost['date_lost']),
+                "lost_image_url": lost.get('image_url'),
+                "score": match_result.get("score", 0),
+                "reason": match_result.get("reason", ""),
+                "is_match": match_result.get("is_match", False),
+            })
+
+        # Sort by score descending, return only strong matches
+        results.sort(key=lambda x: x['score'], reverse=True)
+        strong_matches = [r for r in results if r['score'] >= 60]
+
+        return jsonify({
+            "matches": strong_matches,
+            "total_lost_items_checked": len(lost_items)
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if db: db.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=False)
